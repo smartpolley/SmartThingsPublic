@@ -21,8 +21,13 @@ metadata {
 		capability "Sensor"
 
 		fingerprint inClusters: "0x25", deviceJoinName: "Z-Wave Switch"
-		fingerprint mfr:"001D", prod:"1A02", deviceJoinName: "Z-Wave Switch"
-		fingerprint mfr:"0063", prod:"4F50", deviceJoinName: "Z-Wave Switch"
+		fingerprint mfr:"001D", prod:"1A02", model:"0334", deviceJoinName: "Leviton Appliance Module"
+		fingerprint mfr:"0063", prod:"4F50", model:"3031", deviceJoinName: "GE Plug-in Outdoor Switch"
+		fingerprint mfr:"001D", prod:"1D04", model:"0334", deviceJoinName: "Leviton Outlet"
+		fingerprint mfr:"001D", prod:"1C02", model:"0334", deviceJoinName: "Leviton Switch"
+		fingerprint mfr:"001D", prod:"0301", model:"0334", deviceJoinName: "Leviton 15A Switch"
+		fingerprint mfr:"011A", prod:"0101", model:"0102", deviceJoinName: "Enerwave On/Off Switch"
+		fingerprint mfr:"011A", prod:"0101", model:"0603", deviceJoinName: "Enerwave Duplex Receptacle"
 	}
 
 	// simulator metadata

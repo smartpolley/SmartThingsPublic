@@ -74,20 +74,12 @@ metadata {
 	}
 }
 
-def installed() {
-	log.debug "${device} installed"
-}
-
-def updated() {
-	log.debug "${device} updated"
-	configureHealthCheck()
-}
-
 // Parse incoming device messages to generate events
 def parse(String description) {
 	log.debug "description is $description"
 
 	def finalResult = zigbee.getKnownDescription(description)
+	def event = [:]
 
 	//TODO: Remove this after getKnownDescription can parse it automatically
 	if (!finalResult && description!="updated")
@@ -97,10 +89,11 @@ def parse(String description) {
 		log.info "final result = $finalResult"
 		if (finalResult.type == "update") {
 			log.info "$device updates: ${finalResult.value}"
+			event = null
 		}
 		else if (finalResult.type == "power") {
 			def powerValue = (finalResult.value as Integer)/10
-			sendEvent(name: "power", value: powerValue, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true )
+			event = createEvent(name: "power", value: powerValue, descriptionText: '{{ device.displayName }} power is {{ value }} Watts', translatable: true)
 			/*
 				Dividing by 10 as the Divisor is 10000 and unit is kW for the device. AttrId: 0302 and 0300. Simplifying to 10
 				power level is an integer. The exact power level with correct units needs to be handled in the device type
@@ -109,7 +102,7 @@ def parse(String description) {
 		}
 		else {
 			def descriptionText = finalResult.value == "on" ? '{{ device.displayName }} is On' : '{{ device.displayName }} is Off'
-			sendEvent(name: finalResult.type, value: finalResult.value, descriptionText: descriptionText, translatable: true)
+			event = createEvent(name: finalResult.type, value: finalResult.value, descriptionText: descriptionText, translatable: true)
 		}
 	}
 	else {
@@ -118,10 +111,11 @@ def parse(String description) {
 		if (cluster && cluster.clusterId == 0x0006 && cluster.command == 0x07){
 			if (cluster.data[0] == 0x00) {
 				log.debug "ON/OFF REPORTING CONFIG RESPONSE: " + cluster
-				sendEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
+				event = createEvent(name: "checkInterval", value: 60 * 12, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 			}
 			else {
 				log.warn "ON/OFF REPORTING CONFIG FAILED- error code:${cluster.data[0]}"
+				event = null
 			}
 		}
 		else {
@@ -129,6 +123,7 @@ def parse(String description) {
 			log.debug "${cluster}"
 		}
 	}
+	return event
 }
 
 def off() {
@@ -149,14 +144,10 @@ def refresh() {
 	zigbee.onOffRefresh() + zigbee.electricMeasurementPowerRefresh()
 }
 
-def configureHealthCheck() {
-	// Device-Watch allows 3 check-in misses from device (plus 1 min lag time)
-	// enrolls with default periodic reporting until newer 5 min interval is confirmed
-	sendEvent(name: "checkInterval", value: 3 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
-}
-
 def configure() {
-
+	// Device-Watch allows 2 check-in misses from device + ping (plus 1 min lag time)
+	// enrolls with default periodic reporting until newer 5 min interval is confirmed
+	sendEvent(name: "checkInterval", value: 2 * 10 * 60 + 1 * 60, displayed: false, data: [protocol: "zigbee", hubHardwareId: device.hub.hardwareID])
 
 	// OnOff minReportTime 0 seconds, maxReportTime 5 min. Reporting interval if no activity
 	refresh() + zigbee.onOffConfig(0, 300) + powerConfig()
